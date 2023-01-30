@@ -2,13 +2,7 @@ package tourGuide.service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -21,6 +15,7 @@ import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
 import tourGuide.helper.InternalTestHelper;
+import tourGuide.model.DTO.NearbyAttractionDTO;
 import tourGuide.tracker.Tracker;
 import tourGuide.model.User;
 import tourGuide.model.UserReward;
@@ -31,6 +26,7 @@ import tripPricer.TripPricer;
 public class TourGuideService {
 	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
 	private final GpsUtil gpsUtil;
+
 	private final RewardsService rewardsService;
 	private final TripPricer tripPricer = new TripPricer();
 	public final Tracker tracker;
@@ -62,7 +58,8 @@ public class TourGuideService {
 	}
 
 	/**
-	 * @return
+	 * Get a list of every user's most recent location
+	 * @return a map of userId to Locations (longitude,latitude)
 	 */
 	public Map<String,Location> getAllCurrentLocations(){
 		Map<String,Location> allCurrentLocations = new HashMap<>();
@@ -97,13 +94,12 @@ public class TourGuideService {
 	
 	public VisitedLocation trackUserLocation(User user) {
 		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-		//
-		System.out.println("VisitedLocation : "+visitedLocation);
 		user.addToVisitedLocations(visitedLocation);
 		rewardsService.calculateRewards(user);
 		return visitedLocation;
 	}
 
+	/*
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
 		List<Attraction> nearbyAttractions = new ArrayList<>();
 		for(Attraction attraction : gpsUtil.getAttractions()) {
@@ -111,10 +107,38 @@ public class TourGuideService {
 				nearbyAttractions.add(attraction);
 			}
 		}
-		
 		return nearbyAttractions;
 	}
-	
+	*/
+
+	public List<NearbyAttractionDTO> getNearByAttractions(String userName) {
+		// to solve problem between French and English number format
+		// Example : "-79,792443" <> "-79.792443"
+		Locale.setDefault(Locale.ENGLISH);
+
+		List<NearbyAttractionDTO> nearbyAttractions = new ArrayList<>();
+		List<Attraction> allAttractions = gpsUtil.getAttractions();
+		Location userLocation = gpsUtil.getUserLocation(getUser(userName).getUserId()).location;
+		allAttractions.forEach(a -> {
+			Location attractionLocation = new Location(a.latitude,a.longitude);
+			NearbyAttractionDTO attractionDTO = NearbyAttractionDTO.builder()
+					.attractionName(a.attractionName)
+					.attractionLocation(attractionLocation)
+					.userLocation(userLocation)
+					.distance(rewardsService.getDistance(userLocation,attractionLocation))
+					// TODO getRewardPoints need to be public to run here
+					.rewardPoints(rewardsService.getRewardPoints(a,getUser(userName)))
+					//.rewardPoints(2)
+					.build();
+			nearbyAttractions.add(attractionDTO);
+		});
+		return nearbyAttractions.stream()
+				.sorted(Comparator.comparingDouble(NearbyAttractionDTO::getDistance))
+				.limit(5)
+				.collect(Collectors.toList());
+	}
+
+
 	private void addShutDownHook() {
 		Runtime.getRuntime().addShutdownHook(new Thread() { 
 		      public void run() {
