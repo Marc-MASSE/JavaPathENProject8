@@ -60,6 +60,18 @@ public class TourGuideService {
 			trackUserLocation(user);
 		return visitedLocation;
 	}
+
+	/**
+	 * @return
+	 */
+	public Map<String,Location> getAllCurrentLocations(){
+		Map<String,Location> allCurrentLocations = new HashMap<>();
+		List<User> users = getAllUsers();
+		users.forEach(u -> {
+			allCurrentLocations.put(u.getUserId().toString(),u.getLastVisitedLocation().location);
+		});
+		return allCurrentLocations;
+	}
 	
 	public User getUser(String userName) {
 		return internalUserMap.get(userName);
@@ -85,6 +97,8 @@ public class TourGuideService {
 	
 	public VisitedLocation trackUserLocation(User user) {
 		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+		//
+		System.out.println("VisitedLocation : "+visitedLocation);
 		user.addToVisitedLocations(visitedLocation);
 		rewardsService.calculateRewards(user);
 		return visitedLocation;
