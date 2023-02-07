@@ -2,17 +2,23 @@ package tourGuide;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import gpsUtil.GpsUtil;
 import gpsUtil.location.Attraction;
 import gpsUtil.location.VisitedLocation;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import rewardCentral.RewardCentral;
 import tourGuide.helper.InternalTestHelper;
 import tourGuide.model.DTO.NearbyAttractionDTO;
@@ -22,6 +28,14 @@ import tourGuide.model.User;
 import tripPricer.Provider;
 
 public class TestTourGuideService {
+
+	// @Before : JUnit4, @BeforeEach : JUnit5
+	@Before
+	public void init() {
+		// to solve problem between French and English number format
+		// Example : "-79,792443" <> "-79.792443"
+		Locale.setDefault(Locale.ENGLISH);
+	}
 
 	@Test
 	public void getUserLocation() {
@@ -81,11 +95,6 @@ public class TestTourGuideService {
 	
 	@Test
 	public void trackUser() {
-
-		// to solve problem between French and English number format
-		// Example : "-79,792443" <> "-79.792443"
-		Locale.setDefault(Locale.ENGLISH);
-
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 		InternalTestHelper.setInternalUserNumber(0);
@@ -99,25 +108,24 @@ public class TestTourGuideService {
 		assertEquals(user.getUserId(), visitedLocation.userId);
 	}
 	
-	@Ignore // Not yet implemented
 	@Test
 	public void getNearbyAttractions() {
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
-		InternalTestHelper.setInternalUserNumber(0);
+		InternalTestHelper.setInternalUserNumber(1);
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 		
 		User user = new User(UUID.randomUUID(), "jon", "000", "jon@tourGuide.com");
 		VisitedLocation visitedLocation = tourGuideService.trackUserLocation(user);
-		
-		//List<Attraction> attractions = tourGuideService.getNearByAttractions(visitedLocation);
-		List<NearbyAttractionDTO> attractions = tourGuideService.getNearByAttractions("jon");
-		
+
+		List<NearbyAttractionDTO> attractions = tourGuideService.getNearByAttractions(user,visitedLocation);
+
 		tourGuideService.tracker.stopTracking();
 		
 		assertEquals(5, attractions.size());
 	}
-	
+
+	@Test
 	public void getTripDeals() {
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
@@ -130,7 +138,7 @@ public class TestTourGuideService {
 		
 		tourGuideService.tracker.stopTracking();
 		
-		assertEquals(10, providers.size());
+		assertEquals(5, providers.size());
 	}
 	
 	

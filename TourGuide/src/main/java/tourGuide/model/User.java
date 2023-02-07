@@ -68,9 +68,15 @@ public class User {
 	public void clearVisitedLocations() {
 		visitedLocations.clear();
 	}
-	
+
+	/**
+	 * Add a userReward if the attraction has not already been visited
+	 * @param userReward to add
+	 */
 	public void addUserReward(UserReward userReward) {
-		if(userRewards.stream().filter(r -> !r.attraction.attractionName.equals(userReward.attraction)).count() == 0) {
+		if(userRewards.stream()
+				.filter(r -> r.attraction.attractionName.equals(userReward.attraction))
+				.count() == 0) {
 			userRewards.add(userReward);
 		}
 	}

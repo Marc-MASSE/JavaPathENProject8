@@ -1,6 +1,7 @@
 package tourGuide.service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -21,7 +22,7 @@ public class RewardsService {
 	private int proximityBuffer = defaultProximityBuffer;
 
 	// The range is maximum
-	private int attractionProximityRange = Integer.MAX_VALUE;
+	private int attractionProximityRange = 200; //Integer.MAX_VALUE;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
 	
@@ -37,17 +38,24 @@ public class RewardsService {
 	public void setDefaultProximityBuffer() {
 		proximityBuffer = defaultProximityBuffer;
 	}
-	
+
+	/**
+	 * To calculate the rewards that accrue to a user.
+	 * An attraction is considered visited if it is close to a visited place.
+	 * @param user The one whose reward to calculate.
+	 */
 	public void calculateRewards(User user) {
 		List<VisitedLocation> userLocations = user.getVisitedLocations();
 		List<Attraction> attractions = gpsUtil.getAttractions();
-		
 		for(VisitedLocation visitedLocation : userLocations) {
 			for(Attraction attraction : attractions) {
-				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
-					if(nearAttraction(visitedLocation, attraction)) {
-						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-					}
+				if(user.getUserRewards()
+						.stream()
+						.filter(r -> r.attraction.attractionName.equals(attraction.attractionName))
+						.count()==0){
+							if(nearAttraction(visitedLocation, attraction)) {
+								user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+							}
 				}
 			}
 		}
@@ -61,7 +69,7 @@ public class RewardsService {
 		return getDistance(attraction, visitedLocation.location) > proximityBuffer ? false : true;
 	}
 	
-	// TODO was private => change to public
+	// Was private => change to public
 	public int getRewardPoints(Attraction attraction, User user) {
 		return rewardsCentral.getAttractionRewardPoints(attraction.attractionId, user.getUserId());
 	}

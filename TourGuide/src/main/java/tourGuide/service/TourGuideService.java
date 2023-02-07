@@ -15,6 +15,7 @@ import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
 import tourGuide.helper.InternalTestHelper;
+import tourGuide.model.DTO.AttractionDistanceDTO;
 import tourGuide.model.DTO.NearbyAttractionDTO;
 import tourGuide.tracker.Tracker;
 import tourGuide.model.User;
@@ -111,33 +112,43 @@ public class TourGuideService {
 	}
 	*/
 
-	public List<NearbyAttractionDTO> getNearByAttractions(String userName) {
+
+	public List<NearbyAttractionDTO> getNearByAttractions(User user, VisitedLocation visitedLocation) {
 		// to solve problem between French and English number format
 		// Example : "-79,792443" <> "-79.792443"
 		Locale.setDefault(Locale.ENGLISH);
 
 		List<NearbyAttractionDTO> nearbyAttractions = new ArrayList<>();
-		List<Attraction> allAttractions = gpsUtil.getAttractions();
-		Location userLocation = gpsUtil.getUserLocation(getUser(userName).getUserId()).location;
-		allAttractions.forEach(a -> {
-			Location attractionLocation = new Location(a.latitude,a.longitude);
+		List<AttractionDistanceDTO> fiveNearestAttractions = getFiveNearestAttractions(visitedLocation);
+		fiveNearestAttractions.forEach(f -> {
+			Location attractionLocation = new Location(f.getAttraction().latitude,f.getAttraction().longitude);
 			NearbyAttractionDTO attractionDTO = NearbyAttractionDTO.builder()
-					.attractionName(a.attractionName)
-					.attractionLocation(attractionLocation)
-					.userLocation(userLocation)
-					.distance(rewardsService.getDistance(userLocation,attractionLocation))
-					// TODO getRewardPoints need to be public to run here
-					.rewardPoints(rewardsService.getRewardPoints(a,getUser(userName)))
-					//.rewardPoints(2)
+					.attractionName(f.getAttraction().attractionName)
+					.attractionLocation(new Location(f.getAttraction().latitude,f.getAttraction().longitude))
+					.userLocation(visitedLocation.location)
+					.distance(f.getDistance())
+					.rewardPoints(rewardsService.getRewardPoints(f.getAttraction(),user))
 					.build();
 			nearbyAttractions.add(attractionDTO);
 		});
-		return nearbyAttractions.stream()
-				.sorted(Comparator.comparingDouble(NearbyAttractionDTO::getDistance))
+		return nearbyAttractions;
+	}
+
+	public List<AttractionDistanceDTO> getFiveNearestAttractions(VisitedLocation visitedLocation) {
+		List<Attraction> allAttractions = gpsUtil.getAttractions();
+		List<AttractionDistanceDTO> attractionDistances = new ArrayList<>();
+		allAttractions.forEach(a -> {
+			AttractionDistanceDTO attractionDistanceDTO = AttractionDistanceDTO.builder()
+					.attraction(a)
+					.distance(rewardsService.getDistance(visitedLocation.location,a))
+					.build();
+			attractionDistances.add(attractionDistanceDTO);
+		});
+		return attractionDistances.stream()
+				.sorted(Comparator.comparingDouble(AttractionDistanceDTO::getDistance))
 				.limit(5)
 				.collect(Collectors.toList());
 	}
-
 
 	private void addShutDownHook() {
 		Runtime.getRuntime().addShutdownHook(new Thread() { 
@@ -186,7 +197,7 @@ public class TourGuideService {
 	    return leftLimit + new Random().nextDouble() * (rightLimit - leftLimit);
 	}
 	
-	private Date getRandomTime() {
+	public Date getRandomTime() {
 		LocalDateTime localDateTime = LocalDateTime.now().minusDays(new Random().nextInt(30));
 	    return Date.from(localDateTime.toInstant(ZoneOffset.UTC));
 	}
