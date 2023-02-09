@@ -1,5 +1,6 @@
 package tourGuide;
 
+import static java.lang.Thread.sleep;
 import static org.junit.Assert.*;
 
 import java.util.Date;
@@ -53,7 +54,6 @@ public class TestRewardsService {
 		assertTrue(rewardsService.isWithinAttractionProximity(attraction, attraction));
 	}
 	
-	// TODO Needs fixed - can throw ConcurrentModificationException
 	@Test
 	public void nearAllAttractions() {
 		GpsUtil gpsUtil = new GpsUtil();
@@ -64,34 +64,22 @@ public class TestRewardsService {
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
 		User userTest = tourGuideService.getAllUsers().get(0);
-		/*
-		userTest.clearVisitedLocations();
-		// Add visited location near Disneyland
-		userTest.addToVisitedLocations(
-				new VisitedLocation(userTest.getUserId(),
-				new Location(33.8, -117.9),
-				tourGuideService.getRandomTime()));
-		// Add visited location near Jackson Hole
-		userTest.addToVisitedLocations(
-				new VisitedLocation(userTest.getUserId(),
-				new Location(43.5, -110.8),
-				tourGuideService.getRandomTime()));
-		// Add visited location near Mojave National Preserve
-		userTest.addToVisitedLocations(
-				new VisitedLocation(userTest.getUserId(),
-				new Location(35.1, -115.5),
-				tourGuideService.getRandomTime()));
-		*/
 
 		rewardsService.calculateRewards(userTest);
 		List<UserReward> userRewards = tourGuideService.getUserRewards(userTest);
+
+		// The test must wait until userTest.getUserRewards has obtained its result.
+		while (userTest.getUserRewards().isEmpty()) {
+			try {
+				sleep(1000);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
 		tourGuideService.tracker.stopTracking();
 
-		//for test
-		List<Attraction> attractions = gpsUtil.getAttractions();
-
 		assertEquals(gpsUtil.getAttractions().size(), userRewards.size());
-		//assertEquals(userTest.getVisitedLocations().size(), userRewards.size());
 
 	}
 	

@@ -1,5 +1,6 @@
 package tourGuide;
 
+import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -72,7 +73,7 @@ public class TestPerformance {
 		assertTrue(TimeUnit.MINUTES.toSeconds(15) >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
 	}
 	
-	@Ignore
+	//@Ignore
 	@Test
 	public void highVolumeGetRewards() {
 		GpsUtil gpsUtil = new GpsUtil();
@@ -90,7 +91,18 @@ public class TestPerformance {
 		allUsers.forEach(u -> u.addToVisitedLocations(new VisitedLocation(u.getUserId(), attraction, new Date())));
 	     
 	    allUsers.forEach(u -> rewardsService.calculateRewards(u));
-	    
+		// The test must wait until user.getUserRewards has obtained its result.
+		for(User user : allUsers) {
+			while (user.getUserRewards().isEmpty()) {
+				try {
+					sleep(200);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+
+
 		for(User user : allUsers) {
 			assertTrue(user.getUserRewards().size() > 0);
 		}

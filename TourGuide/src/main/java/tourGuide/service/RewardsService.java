@@ -1,6 +1,10 @@
 package tourGuide.service;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -21,8 +25,7 @@ public class RewardsService {
     private int defaultProximityBuffer = 10;
 	private int proximityBuffer = defaultProximityBuffer;
 
-	// The range is maximum
-	private int attractionProximityRange = 200; //Integer.MAX_VALUE;
+	private int attractionProximityRange = 200;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
 	
@@ -45,6 +48,8 @@ public class RewardsService {
 	 * @param user The one whose reward to calculate.
 	 */
 	public void calculateRewards(User user) {
+		// To create a thread pool
+		Executor executor = Executors.newFixedThreadPool(100);
 		List<VisitedLocation> userLocations = user.getVisitedLocations();
 		List<Attraction> attractions = gpsUtil.getAttractions();
 		for(VisitedLocation visitedLocation : userLocations) {
@@ -54,9 +59,14 @@ public class RewardsService {
 						.filter(r -> r.attraction.attractionName.equals(attraction.attractionName))
 						.count()==0){
 							if(nearAttraction(visitedLocation, attraction)) {
-								user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+								// To connect concurrent actions
+								CompletableFuture.supplyAsync(() -> {
+									return getRewardPoints(attraction, user);
+								},executor).thenAccept(rewardPoints -> {
+									user.addUserReward(new UserReward(visitedLocation, attraction, rewardPoints));
+								});
 							}
-				}
+						}
 			}
 		}
 	}
@@ -70,8 +80,10 @@ public class RewardsService {
 	}
 	
 	// Was private => change to public
+	// rewardsCentral.getAttractionRewardPoints method is slow.
 	public int getRewardPoints(Attraction attraction, User user) {
 		return rewardsCentral.getAttractionRewardPoints(attraction.attractionId, user.getUserId());
+
 	}
 	
 	public double getDistance(Location loc1, Location loc2) {

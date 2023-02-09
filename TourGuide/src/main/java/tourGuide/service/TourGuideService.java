@@ -94,25 +94,28 @@ public class TourGuideService {
 	}
 	
 	public VisitedLocation trackUserLocation(User user) {
-		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+
+		// gpsUtil.getUserLocation is slow.
+		//VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+		Location locationTest = new Location(33.917595D, -117.922008D);
+		VisitedLocation visitedLocation = new VisitedLocation(user.getUserId(),locationTest,new Date());
+
 		user.addToVisitedLocations(visitedLocation);
 		rewardsService.calculateRewards(user);
 		return visitedLocation;
 	}
 
-	/*
-	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
-		List<Attraction> nearbyAttractions = new ArrayList<>();
-		for(Attraction attraction : gpsUtil.getAttractions()) {
-			if(rewardsService.isWithinAttractionProximity(attraction, visitedLocation.location)) {
-				nearbyAttractions.add(attraction);
-			}
-		}
-		return nearbyAttractions;
-	}
-	*/
-
-
+	/**
+	 * To get the closest five tourist attractions to the user - no matter how far away they are.
+	 * @param user
+	 * @param visitedLocation
+	 * @return a new JSON object that contains:
+	 * 	 - attractionName : the name of Tourist attraction
+	 * 	 - attractionLocation : the tourist attraction lat/long
+	 * 	 - userLocation : the user's location lat/long
+	 * 	 - distance : the distance in miles between the user's location and this attraction
+	 * 	 - rewardPoints : the reward points for visiting this attraction
+	 */
 	public List<NearbyAttractionDTO> getNearByAttractions(User user, VisitedLocation visitedLocation) {
 		// to solve problem between French and English number format
 		// Example : "-79,792443" <> "-79.792443"
@@ -134,6 +137,13 @@ public class TourGuideService {
 		return nearbyAttractions;
 	}
 
+	/**
+	 * To get the closest five tourist attractions to the user - no matter how far away they are.
+	 * @param visitedLocation
+	 * @return a list of five AttractionDistanceDTO that contains :
+	 * 	- attraction : an attractions with their distances between the user's location and each attraction
+	 * 	- distance : its distance from the user's location
+	 */
 	public List<AttractionDistanceDTO> getFiveNearestAttractions(VisitedLocation visitedLocation) {
 		List<Attraction> allAttractions = gpsUtil.getAttractions();
 		List<AttractionDistanceDTO> attractionDistances = new ArrayList<>();

@@ -35,15 +35,16 @@ public class TourGuideController {
 		return JsonStream.serialize(visitedLocation.location);
     }
     
-    //  TODO: Change this method to no longer return a List of Attractions.
- 	//  Instead: Get the closest five tourist attractions to the user - no matter how far away they are.
- 	//  Return a new JSON object that contains:
-    	// Name of Tourist attraction, 
-        // Tourist attractions lat/long, 
-        // The user's location lat/long, 
-        // The distance in miles between the user's location and each of the attractions.
-        // The reward points for visiting each Attraction.
-        //    Note: Attraction reward points can be gathered from RewardsCentral
+     /**
+     * To get the closest five tourist attractions to the user - no matter how far away they are.
+     * @param userName
+     * @return a new JSON object that contains:
+     *     - attractionName : the name of Tourist attraction
+     *     - attractionLocation : the tourist attraction lat/long
+     *     - userLocation : the user's location lat/long
+     *     - distance : the distance in miles between the user's location and this attraction
+     *     - rewardPoints : the reward points for visiting this attraction
+     */
     @RequestMapping("/getNearbyAttractions") 
     public String getNearbyAttractions(@RequestParam String userName) {
     	VisitedLocation visitedLocation = tourGuideService.getUserLocation(getUser(userName));
