@@ -41,6 +41,16 @@ public class TestRewardsService {
 		Attraction attraction = gpsUtil.getAttractions().get(0);
 		user.addToVisitedLocations(new VisitedLocation(user.getUserId(), attraction, new Date()));
 		tourGuideService.trackUserLocation(user);
+
+		// The test must wait until userTest.getUserRewards has obtained its result.
+		while (user.getUserRewards().isEmpty()) {
+			try {
+				sleep(1000);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
 		List<UserReward> userRewards = user.getUserRewards();
 		tourGuideService.tracker.stopTracking();
 		assertTrue(userRewards.size() == 1);

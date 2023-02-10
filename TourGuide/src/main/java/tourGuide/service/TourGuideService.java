@@ -3,6 +3,10 @@ package tourGuide.service;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -51,10 +55,10 @@ public class TourGuideService {
 		return user.getUserRewards();
 	}
 	
-	public VisitedLocation getUserLocation(User user) {
+	public VisitedLocation getUserLocation(User user) throws ExecutionException, InterruptedException {
 		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ?
 			user.getLastVisitedLocation() :
-			trackUserLocation(user);
+			trackUserLocation(user).get();
 		return visitedLocation;
 	}
 
@@ -93,17 +97,31 @@ public class TourGuideService {
 		return providers;
 	}
 	
-	public VisitedLocation trackUserLocation(User user) {
+	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
+		// To create a thread pool
+		Executor executor = Executors.newFixedThreadPool(100);
 
 		// gpsUtil.getUserLocation is slow.
-		//VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-		Location locationTest = new Location(33.917595D, -117.922008D);
-		VisitedLocation visitedLocation = new VisitedLocation(user.getUserId(),locationTest,new Date());
+		CompletableFuture<VisitedLocation> visitedLocation = CompletableFuture.supplyAsync(() -> {
+			return gpsUtil.getUserLocation(user.getUserId());
+				},executor)
+				.thenApply(location ->{
+					user.addToVisitedLocations(location);
+					rewardsService.calculateRewards(user);
+					return location;
+				});
 
+		return visitedLocation;
+	}
+
+	/*
+	public VisitedLocation trackUserLocation(User user) {
+		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
 		user.addToVisitedLocations(visitedLocation);
 		rewardsService.calculateRewards(user);
 		return visitedLocation;
 	}
+	*/
 
 	/**
 	 * To get the closest five tourist attractions to the user - no matter how far away they are.

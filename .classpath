@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path="TourGuide/src/main/java"/>
+	<classpathentry kind="src" path="TourGuide/src/test/java"/>
+	<classpathentry kind="lib" path="TourGuide/gradle/wrapper/gradle-wrapper.jar"/>
+	<classpathentry kind="lib" path="TourGuide/libs/gpsUtil.jar"/>
+	<classpathentry kind="lib" path="TourGuide/libs/RewardCentral.jar"/>
+	<classpathentry kind="lib" path="TourGuide/libs/TripPricer.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
