@@ -54,7 +54,14 @@ public class TourGuideService {
 	public List<UserReward> getUserRewards(User user) {
 		return user.getUserRewards();
 	}
-	
+
+	/**
+	 * To get the last visited location of a user designated by his username
+	 * @param user
+	 * @return a visitedLocation
+	 * @throws ExecutionException will be thrown if interrupt is called on the waiting thread before the computation has completed
+	 * @throws InterruptedException is thrown when a thread is interrupted while it's waiting, sleeping, or otherwise occupied
+	 */
 	public VisitedLocation getUserLocation(User user) throws ExecutionException, InterruptedException {
 		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ?
 			user.getLastVisitedLocation() :
@@ -74,21 +81,42 @@ public class TourGuideService {
 		});
 		return allCurrentLocations;
 	}
-	
+
+	/**
+	 * To get a user designated by his username
+	 * @param userName
+	 * @return this user
+	 */
 	public User getUser(String userName) {
 		return internalUserMap.get(userName);
 	}
-	
+
+	/**
+	 * To get the list of all users
+	 * @return a Map that contains (userName, user)
+	 */
 	public List<User> getAllUsers() {
 		return internalUserMap.values().stream().collect(Collectors.toList());
 	}
-	
+
+	/**
+	 * To add a user that does not already exist
+	 * @param user
+	 */
 	public void addUser(User user) {
 		if(!internalUserMap.containsKey(user.getUserName())) {
 			internalUserMap.put(user.getUserName(), user);
 		}
 	}
-	
+
+	/**
+	 * To get all the trip deals of a user.
+	 * @param user
+	 * @return a list of Provider that contains :
+	 *     - its id
+	 *     - its name
+	 *     - its price
+	 */
 	public List<Provider> getTripDeals(User user) {
 		int cumulatativeRewardPoints = user.getUserRewards().stream().mapToInt(i -> i.getRewardPoints()).sum();
 		List<Provider> providers = tripPricer.getPrice(tripPricerApiKey, user.getUserId(), user.getUserPreferences().getNumberOfAdults(), 
@@ -96,7 +124,13 @@ public class TourGuideService {
 		user.setTripDeals(providers);
 		return providers;
 	}
-	
+
+	/**
+	 * To add the current location of a user to his visitedLocation list
+	 * 	and to add its reward
+	 * @param user
+	 * @return a completableFuture of visitedLocation
+	 */
 	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
 		// To create a thread pool
 		Executor executor = Executors.newFixedThreadPool(100);
@@ -110,18 +144,8 @@ public class TourGuideService {
 					rewardsService.calculateRewards(user);
 					return location;
 				});
-
 		return visitedLocation;
 	}
-
-	/*
-	public VisitedLocation trackUserLocation(User user) {
-		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-		user.addToVisitedLocations(visitedLocation);
-		rewardsService.calculateRewards(user);
-		return visitedLocation;
-	}
-	*/
 
 	/**
 	 * To get the closest five tourist attractions to the user - no matter how far away they are.
@@ -194,6 +218,11 @@ public class TourGuideService {
 	private static final String tripPricerApiKey = "test-server-api-key";
 	// Database connection will be used for external users, but for testing purposes internal users are provided and stored in memory
 	private final Map<String, User> internalUserMap = new HashMap<>();
+
+	/**
+	 * To create a list of users
+	 * Their number is determined by InternalTestHelper.getInternalUserNumber()
+	 */
 	private void initializeInternalUsers() {
 		IntStream.range(0, InternalTestHelper.getInternalUserNumber()).forEach(i -> {
 			String userName = "internalUser" + i;
@@ -206,7 +235,11 @@ public class TourGuideService {
 		});
 		logger.debug("Created " + InternalTestHelper.getInternalUserNumber() + " internal test users.");
 	}
-	
+
+	/**
+	 * To add 3 random visitedLocation to a user
+	 * @param user
+	 */
 	private void generateUserLocationHistory(User user) {
 		IntStream.range(0, 3).forEach(i-> {
 			user.addToVisitedLocations(new VisitedLocation(user.getUserId(), new Location(generateRandomLatitude(), generateRandomLongitude()), getRandomTime()));

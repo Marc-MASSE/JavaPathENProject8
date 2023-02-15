@@ -70,22 +70,47 @@ public class RewardsService {
 			}
 		}
 	}
-	
+
+	/**
+	 * To check if an attraction is near a location or not
+	 * An attraction is considered close if its distance is less than attractionProximityRange
+	 * @param attraction to get the attraction location
+	 * @param location
+	 * @return true if the attraction is close, false otherwise
+	 */
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {
 		return getDistance(attraction, location) > attractionProximityRange ? false : true;
 	}
-	
+
+	/**
+	 * To check if an attraction is near a user's location or not
+	 * An attraction is considered close if its distance is less than proximityBuffer
+	 * @param visitedLocation to get the user location
+	 * @param attraction to get the attraction location
+	 * @return true if the attraction is close, false otherwise
+	 */
 	private boolean nearAttraction(VisitedLocation visitedLocation, Attraction attraction) {
 		return getDistance(attraction, visitedLocation.location) > proximityBuffer ? false : true;
 	}
-	
-	// Was private => change to public
-	// rewardsCentral.getAttractionRewardPoints method is slow.
+
+	/**
+	 * To calculate the number of reward points earned by a user by visiting an attraction
+	 * @param attraction
+	 * @param user
+	 * @return this number of reward points
+	 */
 	public int getRewardPoints(Attraction attraction, User user) {
+		// rewardsCentral.getAttractionRewardPoints method is slow.
 		return rewardsCentral.getAttractionRewardPoints(attraction.attractionId, user.getUserId());
 
 	}
-	
+
+	/**
+	 * To get the distance between two locations
+	 * @param loc1
+	 * @param loc2
+	 * @return this distance
+	 */
 	public double getDistance(Location loc1, Location loc2) {
         double lat1 = Math.toRadians(loc1.latitude);
         double lon1 = Math.toRadians(loc1.longitude);
